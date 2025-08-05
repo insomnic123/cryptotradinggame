@@ -1,103 +1,172 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+import React, { useState, useEffect } from 'react';
+import {TrendingUp, TrendingDown, Coins, DollarSign, Clock, ShoppingCart, BarChart3 } from 'lucide-react';
+
+const CryptoTradingGame = () => {
+  // Default game states
+  const [crypto, setCrypto] = useState(0) 
+  const [cad, setCad] = useState(100)
+  const [cooldownLevel, setCooldownLevel] = useState(1) 
+  const [lastMineTime, setLastMineTime] = useState(0) 
+  const [currentTab, setCurrentTab] = useState('mining');
+
+  // base stock data
+  const [stocks, setStocks] = useState([
+    {id: 1, name: 'Hack the Skies', symbol: 'HTS', price: 100, history: [100], volatility: 0.02, trend: 0.001},
+    {id: 2, name: 'Raiyan & Co.', symbol: 'RYI', price: 200, history: [200], volatility: 0.03, trend: -0.002},
+    {id: 3, name: 'Doofenshmirtz Evil Incorporated', symbol: 'DEI', price: 75, history: [75], volatility: 0.015, trend: -0.001 },
+    {id: 4, name: 'Kababia', symbol: 'KBA', price: 25, history: [25], volatility: 0.025, trend: 0.0005 },
+    {id: 5, name: 'ClosedAI.', symbol: 'CAI', price: 75, history: [75], volatility: 0.015, trend: -0.001 },
+    {id: 6, name: 'DJLJ Physics Solutions', symbol: 'DCTI', price: 150, history: [150], volatility: 0.04, trend: 0.003 }
+  ])
+
+  const [portfolio, setPortfolio] = useState({}); 
+  const [tradeAmount, setTradeAmount] = useState({});
+  const [selectedStock, setSelectedStock] = useState(null);
+
+  const cryptoRate = 10; // 1 crypto = 10 CAD
+  const baseCooldown = 5000; 
+  const baseMineAmount = 1;
+
+  const getCurrentCooldown = () => Math.max(1000, baseCooldown - (cooldownLevel - 1) * 500);
+  getCooldownUpgradeCost = () => Math.floor(50 * Math.pow(1.5, cooldownLevel - 1));
+  const canMine = () => Date.now() - lastMineTime >= getCurrentCooldown();
+
+  const mineCrypto = () => {
+    if (canMine()) {
+      setCrypto(prev => prev + baseMineAmount);
+      setLastMineTime(Date.now());
+    }
+  }
+
+  const convertCrypto = (amount) => {
+    const maxConvertible = Math.floor(crypto);
+    const toConvert = Math.min(amount || maxConvertible, maxConvertible);
+    if (toConvert > 0) {
+      setCrypto(prev => prev - toConvert);
+      setCad(prev => prev + toConvert * cryptoRate);
+    }
+  }
+
+  const setMaxConvert = () => {
+    setTradeAmount({...tradeAmount, convert: Math.floor(crypto)}); 
+  }
+
+  const setMaxBuy = (stockID) => {
+    const stock = stocks.find(s => s.id === stockID)
+    const maxShares = Math.floor(cad / stock.price);
+    setTradeAmount({...tradeAmount, [stockID]: owned});
+  }
+
+  const setMaxSell = (stockID) => {
+    const owned = portfolio[stockID] || 0;
+    setTradeAmount({...tradeAmount, [stockID]: owned});
+  }
+
+  const upgradeCooldwon = () => {
+    const cost = getCooldownUpgradeCost();
+    if (cad >= cost) {
+      setCad(prev => prev - cost);
+      setCooldownLevel(prev => prev + 1);
+    } 
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStocks(prevStocks => 
+        prevStocks.map(stock => {
+          const random = (Math.random() - 0.5) * 2; // -1 to 1
+          const change = random * stock.volatility + stock.trend;
+          const newPrice = Math.max(1, stock.price * (1 + change));
+          const newHistory = [...stock.history.slice(-49), newPrice]; // Keep last 50 points
+          
+          return {
+            ...stock,
+            price: newPrice,
+            history: newHistory
+          };
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const buyStock = (stockID, amount) => {
+    const stock = stocks.find(s => s.id === stockID);
+    const cost = stock.price * amount; 
+
+    if (cad >= cost) {
+      setCad(prev => prev - cost);
+      setPortfolio(prev => ({
+        ...prev,
+        [stockID]: (prev[stockID] || 0) + amount
+      }));
+    }
+  }
+
+  const sellStock = (stockID, amount) => {
+    const stock = stocks.find(s => s.id === stockID);
+    const owned = portfolio[stockID] || 0;
+    const toSell = Math.min(amount, owned);
+
+   if (toSell > 0) {
+      const revenue = stock.price * toSell;
+      setCad(prev => prev + revenue);
+      setPortfolio(prev => ({
+        ...prev,
+        [stockId]: Math.max(0, owned - toSell)
+      }));
+    }
+  }
+
+  const getPortfolioValue = () => {
+    return Object.entries(portfolio).reduce((total, [stockID, shares]) => {
+      const stock = stocks.find(s => s.id === parseInt(stockID));
+      return total + (stock ? stock.price * shares : 0);
+    }, 0)
+  }
+
+  const renderMiniChart = (history) => {
+    if (history.length < 2) return null; 
+
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+
+    const points = history.map((price, index) => {
+      const x = (index/(history.length - 1)) * 80;
+      const y = 30 - ((price - min) / range) * 25;
+      return `${x},${y}`;
+    }).join('')
+
+    return (
+      <svg width="80" height="30" className="inline-block" viewBox="0 0 80 30">
+        <polyline
+          points={points}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+      </svg>
+    )
+  }
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!canMine()) {
+        const remaining = getCurrentCooldown() - (Date.now() - lastMineTime);
+        setTimeLeft(Math.max(0, Math.ceil(remaining / 1000)));
+      } else {
+        setTimeLeft(0);
+      }
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [lastMineTime, cooldownLevel]);
+
+
 }
