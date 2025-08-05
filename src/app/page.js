@@ -6,7 +6,7 @@ import {TrendingUp, TrendingDown, Coins, DollarSign, Clock, ShoppingCart, BarCha
 const CryptoTradingGame = () => {
   // Default game states
   const [crypto, setCrypto] = useState(0) 
-  const [cad, setCad] = useState(100000)
+  const [cad, setCad] = useState(0)
   const [cooldownLevel, setCooldownLevel] = useState(1) 
   const [lastMineTime, setLastMineTime] = useState(0) 
   const [currentTab, setCurrentTab] = useState('mining');
@@ -25,8 +25,8 @@ const CryptoTradingGame = () => {
   const [tradeAmount, setTradeAmount] = useState({});
   const [selectedStock, setSelectedStock] = useState(null);
 
-  const cryptoRate = 10;
-  const baseCooldown = 1000; 
+  const cryptoRate = 100;
+  const baseCooldown = 5000; 
   const baseMineAmount = 1;
 
   const getCurrentCooldown = () => Math.max(10, baseCooldown - (cooldownLevel - 1) * 500);
@@ -93,7 +93,7 @@ const CryptoTradingGame = () => {
           };
         })
       );
-    }, 1000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
