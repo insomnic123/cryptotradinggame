@@ -49,7 +49,7 @@ const CryptoTradingGame = () => {
       name: 'Auto Miner Bot',
       description: 'Automatically mines crypto every 10 seconds. Stackable!',
       icon: Bot,
-      baseCost: 2500,
+      baseCost: 500,
       maxLevel: 50,
       costMultiplier: 1.4
     },
