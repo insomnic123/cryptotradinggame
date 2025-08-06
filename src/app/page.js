@@ -340,6 +340,8 @@ const CryptoTradingGame = () => {
           ...prev,
           [selectedStock.id]: (prev[selectedStock.id] || 0) + tradeAmount
         }));
+
+        setTotalInvested(prev => prev + cost);
         
         if (!success) {
           setPortfolio(prev => ({
@@ -368,6 +370,8 @@ const CryptoTradingGame = () => {
           ...prev,
           [selectedStock.id]: Math.max(0, owned - toSell)
         }));
+
+        setTotalInvested(prev => prev - revenue);
         
         addToTransactionLog('RECRUIT_SELL', selectedStock.symbol, toSell, selectedStock.price, success);
       }
