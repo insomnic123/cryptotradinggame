@@ -1,26 +1,30 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import {TrendingUp, TrendingDown, Coins, DollarSign, Clock, ShoppingCart, BarChart3, Activity, Zap, TrendingUpIcon, Target, Star, Bot } from 'lucide-react';
+import {TrendingUp, TrendingDown, Coins, DollarSign, Clock, ShoppingCart, BarChart3, Activity, Zap, Target, Star, Bot, Users, UserPlus, Briefcase, Coffee, Brain } from 'lucide-react';
 
 const CryptoTradingGame = () => {
   // Default game states
   const [crypto, setCrypto] = useState(0) 
-  const [cad, setCad] = useState(0)
+  const [cad, setCad] = useState(1000) 
   const [cooldownLevel, setCooldownLevel] = useState(1) 
   const [lastMineTime, setLastMineTime] = useState(0) 
   const [currentTab, setCurrentTab] = useState('mining');
   const [transactionLog, setTransactionLog] = useState([]);
 
+  // Recruits system
+  const [hiredRecruits, setHiredRecruits] = useState([]);
+  const [recruitCooldowns, setRecruitCooldowns] = useState({});
+
   // Shop upgrades state
   const [shopUpgrades, setShopUpgrades] = useState({
-    miningBoost: 0,      // Increases mining amount
-    luckyMiner: 0,       // Chance for bonus crypto
-    marketInsight: 0,    // Shows next price direction hints
-    portfolioInsurance: 0, // Reduces losses on bad trades
-    speedTrader: 0,      // Faster transaction processing
-    dividendBonus: 0,    // Passive income from held stocks
-    autoMiner: 0         // Auto-mining bots
+    miningBoost: 0,
+    luckyMiner: 0,
+    marketInsight: 0,
+    portfolioInsurance: 0,
+    speedTrader: 0,
+    dividendBonus: 0,
+    autoMiner: 0
   });
 
   // base stock data
@@ -38,11 +42,242 @@ const CryptoTradingGame = () => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [showAdvancedCharts, setShowAdvancedCharts] = useState(false);
 
+  // Available recruits with their investment strategies
+  const recruitableCharacters = [
+    {
+      id: 'sarah_conservative',
+      name: 'Dobrik Jackson',
+      title: 'Conservative Investor',
+      description: 'Makes safe, steady investments. Never loses more than 10% in a single trade.',
+      icon: Target,
+      hireCost: 2000,
+      salary: 50,
+      cooldownTime: 30000,
+      strategy: 'conservative',
+      personality: 'Careful and methodical, Dobrik always reads the fine print.',
+      maxDebt: 500,
+      specialty: 'Low-risk investments with steady returns'
+    },
+    {
+      id: 'jake_aggressive',
+      name: 'Matt "The Bull" Onbacher',
+      title: 'Aggressive Trader',
+      description: 'High risk, high reward! Can make big gains but also big losses.',
+      icon: TrendingUp,
+      hireCost: 3500,
+      salary: 100,
+      cooldownTime: 45000,
+      strategy: 'aggressive',
+      personality: 'Confident and bold, Jake believes fortune favors the brave.',
+      maxDebt: 2000,
+      specialty: 'High-volatility stocks and momentum trading'
+    },
+    {
+      id: 'maria_technical',
+      name: 'Stokein Vestor',
+      title: 'Technical Analyst',
+      description: 'Uses charts and patterns to time entries perfectly. Moderate risk.',
+      icon: BarChart3,
+      hireCost: 4000,
+      salary: 75,
+      cooldownTime: 60000,
+      strategy: 'technical',
+      personality: 'Analytical and precise, Maria sees patterns others miss.',
+      maxDebt: 1200,
+      specialty: 'Chart analysis and trend following'
+    },
+    {
+      id: 'bob_random',
+      name: 'Shwarma Mann',
+      title: 'Luck-Based Investor',
+      description: 'Completely random trades! Could make you rich or bankrupt you.',
+      icon: Star,
+      hireCost: 1500,
+      salary: 25,
+      cooldownTime: 20000,
+      strategy: 'random',
+      personality: 'Believes in lucky streaks and superstitions.',
+      maxDebt: 3000,
+      specialty: 'Pure gambling disguised as investing'
+    },
+    {
+      id: 'dr_elena',
+      name: 'Lex Luthor',
+      title: 'Sector Specialist',
+      description: 'Focuses on undervalued companies with long-term potential.',
+      icon: Brain,
+      hireCost: 5000,
+      salary: 125,
+      cooldownTime: 90000,
+      strategy: 'value',
+      personality: 'Former economics professor who believes in fundamentals.',
+      maxDebt: 800,
+      specialty: 'Value investing and sector rotation'
+    },
+    {
+      id: 'coffee_kid',
+      name: 'Caf Yin',
+      title: 'Day Trading Prodigy',
+      description: 'Young, caffeinated, and quick. Makes many small profitable trades.',
+      icon: Coffee,
+      hireCost: 2800,
+      salary: 40,
+      cooldownTime: 15000,
+      strategy: 'daytrader',
+      personality: 'Lives on energy drinks and makes lightning-fast decisions.',
+      maxDebt: 1500,
+      specialty: 'Scalping and short-term momentum plays'
+    }
+  ];
+
   const cryptoRate = 100;
   const baseCooldown = 5000; 
   const baseMineAmount = 1;
 
-  // Shop items configuration
+  const executeRecruitTrade = (recruit) => {
+    const availableStocks = stocks;
+    const recruitData = recruitableCharacters.find(r => r.id === recruit.id);
+    if (!recruitData) return;
+    
+    let tradeAmount = 0;
+    let selectedStock = null;
+    let action = 'buy';
+    let success = false;
+
+    const maxSpendable = cad + recruitData.maxDebt;
+    
+    switch (recruitData.strategy) {
+      case 'conservative':
+        selectedStock = availableStocks[Math.floor(Math.random() * availableStocks.length)];
+        tradeAmount = Math.min(200, maxSpendable * 0.1) / selectedStock.price;
+        action = Math.random() > 0.3 ? 'buy' : 'sell';
+        success = Math.random() > 0.1;
+        break;
+        
+      case 'aggressive':
+        const volatileStocks = availableStocks.filter(s => s.volatility > 0.025);
+        selectedStock = volatileStocks.length > 0 
+          ? volatileStocks[Math.floor(Math.random() * volatileStocks.length)]
+          : availableStocks[Math.floor(Math.random() * availableStocks.length)];
+        tradeAmount = Math.min(800, maxSpendable * 0.4) / selectedStock.price;
+        action = Math.random() > 0.6 ? 'buy' : 'sell';
+        success = Math.random() > 0.25;
+        break;
+        
+      case 'technical':
+        selectedStock = availableStocks.find(s => {
+          if (s.history.length < 3) return false;
+          const recent = s.history.slice(-3);
+          return recent[2] > recent[1] && recent[1] > recent[0];
+        }) || availableStocks[Math.floor(Math.random() * availableStocks.length)];
+        tradeAmount = Math.min(500, maxSpendable * 0.25) / selectedStock.price;
+        action = selectedStock.trend > 0 ? 'buy' : 'sell';
+        success = Math.random() > 0.15;
+        break;
+        
+      default:
+        selectedStock = availableStocks[Math.floor(Math.random() * availableStocks.length)];
+        tradeAmount = Math.min(300, maxSpendable * 0.15) / selectedStock.price;
+        action = Math.random() > 0.5 ? 'buy' : 'sell';
+        success = Math.random() > 0.4;
+        break;
+    }
+
+    tradeAmount = Math.floor(tradeAmount * 100) / 100;
+    if (tradeAmount < 0.01) return;
+
+    const cost = tradeAmount * selectedStock.price;
+    
+    if (action === 'buy') {
+      const totalDebt = Math.max(0, -cad);
+      if (totalDebt + cost <= recruitData.maxDebt) {
+        setCad(prev => prev - cost);
+        setPortfolio(prev => ({
+          ...prev,
+          [selectedStock.id]: (prev[selectedStock.id] || 0) + tradeAmount
+        }));
+        
+        if (!success) {
+          setPortfolio(prev => ({
+            ...prev,
+            [selectedStock.id]: (prev[selectedStock.id] || 0) - (tradeAmount * 0.2)
+          }));
+        }
+        
+        addToTransactionLog('RECRUIT_BUY', selectedStock.symbol, tradeAmount, selectedStock.price, success);
+      }
+    } else {
+      const owned = portfolio[selectedStock.id] || 0;
+      const toSell = Math.min(tradeAmount, owned);
+      
+      if (toSell > 0) {
+        let revenue = selectedStock.price * toSell;
+        
+        if (success) {
+          revenue *= 1.1;
+        } else {
+          revenue *= 0.9;
+        }
+        
+        setCad(prev => prev + revenue);
+        setPortfolio(prev => ({
+          ...prev,
+          [selectedStock.id]: Math.max(0, owned - toSell)
+        }));
+        
+        addToTransactionLog('RECRUIT_SELL', selectedStock.symbol, toSell, selectedStock.price, success);
+      }
+    }
+    
+    setCad(prev => prev - recruitData.salary);
+    addToTransactionLog('SALARY', recruit.name.toUpperCase(), recruitData.salary, 1, false);
+    
+    setRecruitCooldowns(prev => ({
+      ...prev,
+      [recruit.id]: Date.now()
+    }));
+  };
+
+  const hireRecruit = (recruitId) => {
+    const recruit = recruitableCharacters.find(r => r.id === recruitId);
+    if (!recruit) return;
+    
+    const totalDebt = Math.max(0, -cad);
+    const canAfford = cad >= recruit.hireCost || (totalDebt + recruit.hireCost <= 1000);
+    
+    if (canAfford && !hiredRecruits.find(r => r.id === recruitId)) {
+      setCad(prev => prev - recruit.hireCost);
+      setHiredRecruits(prev => [...prev, { id: recruitId, hiredAt: Date.now() }]);
+      addToTransactionLog('HIRE', recruit.name.toUpperCase(), 1, recruit.hireCost, null);
+    }
+  };
+
+  const fireRecruit = (recruitId) => {
+    setHiredRecruits(prev => prev.filter(r => r.id !== recruitId));
+    setRecruitCooldowns(prev => {
+      const newCooldowns = { ...prev };
+      delete newCooldowns[recruitId];
+      return newCooldowns;
+    });
+  };
+
+  const canRecruitTrade = (recruitId) => {
+    const cooldown = recruitCooldowns[recruitId];
+    if (!cooldown) return true;
+    
+    const recruit = recruitableCharacters.find(r => r.id === recruitId);
+    return Date.now() - cooldown >= recruit.cooldownTime;
+  };
+
+  const getRemainingCooldown = (recruitId) => {
+    const cooldown = recruitCooldowns[recruitId];
+    if (!cooldown) return 0;
+    
+    const recruit = recruitableCharacters.find(r => r.id === recruitId);
+    const remaining = recruit.cooldownTime - (Date.now() - cooldown);
+    return Math.max(0, Math.ceil(remaining / 1000));
+  };
+
   const shopItems = [
     {
       id: 'autoMiner',
@@ -72,24 +307,6 @@ const CryptoTradingGame = () => {
       costMultiplier: 2.5
     },
     {
-      id: 'marketInsight',
-      name: 'Market Insight',
-      description: 'Shows price direction hints for stocks',
-      icon: TrendingUpIcon,
-      baseCost: 2000,
-      maxLevel: 3,
-      costMultiplier: 3.0
-    },
-    {
-      id: 'portfolioInsurance',
-      name: 'Portfolio Insurance',
-      description: 'Reduces losses by 5% per level when stocks drop',
-      icon: Target,
-      baseCost: 1500,
-      maxLevel: 8,
-      costMultiplier: 2.2
-    },
-    {
       id: 'speedTrader',
       name: 'Speed Trader',
       description: 'Reduces mining cooldown by additional 200ms per level',
@@ -97,21 +314,12 @@ const CryptoTradingGame = () => {
       baseCost: 800,
       maxLevel: 15,
       costMultiplier: 1.6
-    },
-    {
-      id: 'dividendBonus',
-      name: 'Dividend Master',
-      description: 'Earn 0.1% of portfolio value every 30 seconds per level',
-      icon: Activity,
-      baseCost: 3000,
-      maxLevel: 5,
-      costMultiplier: 4.0
     }
   ];
 
   const getCurrentCooldown = () => {
     const speedTraderReduction = shopUpgrades.speedTrader * 200;
-    const progressiveReduction = Math.min(cooldownLevel * 100, 2000); // Up to 2s reduction from progression
+    const progressiveReduction = Math.min(cooldownLevel * 100, 2000);
     return Math.max(100, baseCooldown - progressiveReduction - speedTraderReduction);
   };
 
@@ -128,7 +336,7 @@ const CryptoTradingGame = () => {
     const transaction = {
       id: Date.now() + Math.random(),
       timestamp,
-      type, // 'BUY', 'SELL', 'MINE', 'CONVERT', 'UPGRADE'
+      type,
       symbol,
       amount,
       price,
@@ -136,14 +344,13 @@ const CryptoTradingGame = () => {
       isProfit
     };
     
-    setTransactionLog(prev => [transaction, ...prev.slice(0, 49)]); // Keep last 50 transactions
+    setTransactionLog(prev => [transaction, ...prev.slice(0, 49)]);
   };
 
   const mineCrypto = () => {
     if (canMine()) {
       let mineAmount = baseMineAmount + (shopUpgrades.miningBoost * 0.5);
       
-      // Lucky miner bonus
       if (shopUpgrades.luckyMiner > 0) {
         const luckChance = shopUpgrades.luckyMiner * 0.1;
         if (Math.random() < luckChance) {
@@ -220,28 +427,24 @@ const CryptoTradingGame = () => {
         const autoMineAmount = shopUpgrades.autoMiner * (baseMineAmount + (shopUpgrades.miningBoost * 0.5));
         setCrypto(prev => prev + autoMineAmount);
         addToTransactionLog('AUTO_MINE', 'CRYPTO', autoMineAmount, 1, null);
-      }, 10000); // Every 10 seconds
+      }, 10000);
       
       return () => clearInterval(interval);
     }
   }, [shopUpgrades.autoMiner, shopUpgrades.miningBoost]);
 
-  // Dividend system
+  // Auto-execute recruit trades when off cooldown
   useEffect(() => {
-    if (shopUpgrades.dividendBonus > 0) {
-      const interval = setInterval(() => {
-        const portfolioValue = getPortfolioValue();
-        if (portfolioValue > 0) {
-          const dividendRate = shopUpgrades.dividendBonus * 0.001; // 0.1% per level
-          const dividend = portfolioValue * dividendRate;
-          setCad(prev => prev + dividend);
-          addToTransactionLog('DIVIDEND', 'PORTFOLIO', dividend, 1, true);
+    const interval = setInterval(() => {
+      hiredRecruits.forEach(hired => {
+        if (canRecruitTrade(hired.id)) {
+          executeRecruitTrade(hired);
         }
-      }, 30000); // Every 30 seconds
-      
-      return () => clearInterval(interval);
-    }
-  }, [shopUpgrades.dividendBonus, portfolio, stocks]);
+      });
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [hiredRecruits, portfolio, stocks, cad]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -263,15 +466,6 @@ const CryptoTradingGame = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (selectedStock) {
-      const updatedStock = stocks.find(s => s.id === selectedStock.id);
-      if (updatedStock) {
-        setSelectedStock(updatedStock);
-      }
-    }
-  }, [stocks, selectedStock]);
 
   const buyStock = (stockID, amount) => {
     if (!amount || amount <= 0) return;
@@ -297,15 +491,8 @@ const CryptoTradingGame = () => {
     const owned = portfolio[stockID] || 0;
     const toSell = Math.min(amount, owned);
 
-   if (toSell > 0) {
+    if (toSell > 0) {
       let revenue = stock.price * toSell;
-      
-      // Apply portfolio insurance if user has losses
-      if (shopUpgrades.portfolioInsurance > 0) {
-        // This is a simplified loss protection - in a real implementation you'd track buy prices
-        const insuranceBonus = revenue * (shopUpgrades.portfolioInsurance * 0.05);
-        revenue += insuranceBonus;
-      }
       
       setCad(prev => prev + revenue);
       setPortfolio(prev => ({
@@ -349,248 +536,6 @@ const CryptoTradingGame = () => {
     )
   }
 
-  const renderAdvancedChart = (stock) => {
-    if (stock.history.length < 2) return null;
-
-    const history = stock.history;
-    const min = Math.min(...history);
-    const max = Math.max(...history);
-    const range = max - min || 1;
-    const padding = 40;
-    const chartWidth = 600;
-    const chartHeight = 300;
-
-    // Calculate moving averages
-    const calculateMovingAverage = (data, period) => {
-      const result = [];
-      for (let i = 0; i < data.length; i++) {
-        if (i < period - 1) {
-          result.push(null);
-        } else {
-          const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
-          result.push(sum / period);
-        }
-      }
-      return result;
-    };
-
-    const ma5 = calculateMovingAverage(history, 5);
-    const ma10 = calculateMovingAverage(history, 10);
-
-    // Price line points
-    const pricePoints = history.map((price, index) => {
-      const x = padding + (index / (history.length - 1)) * (chartWidth - 2 * padding);
-      const y = padding + (1 - (price - min) / range) * (chartHeight - 2 * padding);
-      return `${x},${y}`;
-    }).join(' ');
-
-    // MA5 line points
-    const ma5Points = ma5.map((price, index) => {
-      if (price === null) return null;
-      const x = padding + (index / (ma5.length - 1)) * (chartWidth - 2 * padding);
-      const y = padding + (1 - (price - min) / range) * (chartHeight - 2 * padding);
-      return `${x},${y}`;
-    }).filter(point => point !== null).join(' ');
-
-    // MA10 line points
-    const ma10Points = ma10.map((price, index) => {
-      if (price === null) return null;
-      const x = padding + (index / (ma10.length - 1)) * (chartWidth - 2 * padding);
-      const y = padding + (1 - (price - min) / range) * (chartHeight - 2 * padding);
-      return `${x},${y}`;
-    }).filter(point => point !== null).join(' ');
-
-    // Support and resistance levels
-    const recentHigh = Math.max(...history.slice(-10));
-    const recentLow = Math.min(...history.slice(-10));
-    const supportY = padding + (1 - (recentLow - min) / range) * (chartHeight - 2 * padding);
-    const resistanceY = padding + (1 - (recentHigh - min) / range) * (chartHeight - 2 * padding);
-
-    // Volume bars (simulated based on volatility)
-    const volumeBars = history.map((price, index) => {
-      if (index === 0) return 0;
-      const change = Math.abs(price - history[index - 1]);
-      return change * 1000; // Simulated volume
-    });
-
-    const maxVolume = Math.max(...volumeBars);
-
-    return (
-      <div className="bg-white/5 rounded-xl p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-bold">Advanced Chart - {stock.symbol}</h4>
-          <div className="flex gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-purple-400"></div>
-              <span>Price</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-blue-400"></div>
-              <span>MA5</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-green-400"></div>
-              <span>MA10</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-red-400 opacity-50"></div>
-              <span>S&R</span>
-            </div>
-          </div>
-        </div>
-        
-        <svg width="100%" height="400" viewBox={`0 0 ${chartWidth} 400`}>
-          {/* Grid lines */}
-          {[1, 2, 3, 4, 5].map(i => (
-            <g key={`grid-${i}`}>
-              <line
-                x1={padding}
-                y1={(i / 6) * chartHeight}
-                x2={chartWidth - padding}
-                y2={(i / 6) * chartHeight}
-                stroke="#ffffff10"
-                strokeWidth="0.5"
-              />
-              <text
-                x={padding - 10}
-                y={(i / 6) * chartHeight + 5}
-                fill="#ffffff60"
-                fontSize="10"
-                textAnchor="end"
-              >
-                ${(max - (i / 6) * range).toFixed(1)}
-              </text>
-            </g>
-          ))}
-
-          {/* Support and Resistance lines */}
-          <line
-            x1={padding}
-            y1={supportY}
-            x2={chartWidth - padding}
-            y2={supportY}
-            stroke="#ef4444"
-            strokeWidth="1"
-            strokeDasharray="5,5"
-            opacity="0.6"
-          />
-          <line
-            x1={padding}
-            y1={resistanceY}
-            x2={chartWidth - padding}
-            y2={resistanceY}
-            stroke="#ef4444"
-            strokeWidth="1"
-            strokeDasharray="5,5"
-            opacity="0.6"
-          />
-
-          {/* Volume bars */}
-          {volumeBars.map((volume, index) => {
-            if (index === 0) return null;
-            const x = padding + (index / (volumeBars.length - 1)) * (chartWidth - 2 * padding);
-            const barHeight = (volume / maxVolume) * 60;
-            return (
-              <rect
-                key={`volume-${index}`}
-                x={x - 1}
-                y={chartHeight + 10}
-                width="2"
-                height={barHeight}
-                fill="#ffffff20"
-              />
-            );
-          })}
-
-          {/* Moving Average lines */}
-          {ma10Points && (
-            <polyline
-              points={ma10Points}
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="2"
-              opacity="0.7"
-            />
-          )}
-          {ma5Points && (
-            <polyline
-              points={ma5Points}
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="2"
-              opacity="0.8"
-            />
-          )}
-
-          {/* Main price line */}
-          <polyline
-            points={pricePoints}
-            fill="none"
-            stroke="#a855f7"
-            strokeWidth="3"
-            className="drop-shadow-lg"
-          />
-
-          {/* Current price dot */}
-          <circle
-            cx={chartWidth - padding}
-            cy={padding + (1 - (stock.price - min) / range) * (chartHeight - 2 * padding)}
-            r="4"
-            fill="#a855f7"
-            className="animate-pulse"
-          />
-
-          {/* Labels */}
-          <text x={10} y={supportY - 5} fill="#ef4444" fontSize="10">Support: ${recentLow.toFixed(2)}</text>
-          <text x={10} y={resistanceY - 5} fill="#ef4444" fontSize="10">Resistance: ${recentHigh.toFixed(2)}</text>
-          <text x={padding} y={chartHeight + 90} fill="#ffffff60" fontSize="10">Volume</text>
-        </svg>
-
-        {/* Technical indicators */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
-          <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">RSI (14)</div>
-            <div className="font-bold text-purple-400">{(50 + Math.random() * 40).toFixed(1)}</div>
-          </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">MACD</div>
-            <div className={`font-bold ${Math.random() > 0.5 ? 'text-green-400' : 'text-red-400'}`}>
-              {(Math.random() * 2 - 1).toFixed(3)}
-            </div>
-          </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">Volatility</div>
-            <div className="font-bold text-yellow-400">{(stock.volatility * 100).toFixed(1)}%</div>
-          </div>
-          <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">Trend</div>
-            <div className={`font-bold ${stock.trend > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {stock.trend > 0 ? '↗️ Bull' : '↘️ Bear'}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const getMarketInsight = (stock) => {
-    if (shopUpgrades.marketInsight === 0) return null;
-    
-    // Simple trend prediction based on recent history
-    if (stock.history.length < 3) return null;
-    
-    const recent = stock.history.slice(-3);
-    const trend = recent[2] - recent[0];
-    
-    if (trend > 0) {
-      return <span className="text-green-400 text-xs">📈 Bullish</span>;
-    } else if (trend < 0) {
-      return <span className="text-red-400 text-xs">📉 Bearish</span>;
-    } else {
-      return <span className="text-yellow-400 text-xs">➡️ Sideways</span>;
-    }
-  };
-
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
@@ -606,246 +551,64 @@ const CryptoTradingGame = () => {
     return () => clearInterval(interval);
   }, [lastMineTime, cooldownLevel, shopUpgrades.speedTrader]);
 
-
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="fixed inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-purple-600/20"></div>
 
       <div className="relative z-10 p-4">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-4 border border-white/20 shadow-2xl">
             <h1 className="text-3xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              CRiDO | Day Trading Simulator
+              CRiDO | Investment Simulator
             </h1>
+            <p className="text-center">CRiDO is an online clicker-based game where you mine crypto and invest it to grow your portfolio</p>
+            <p className="text-center mb-6 opacity-50">Notes: Some recruits functions are buggy, data is not saved.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="bg-purple-600/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
-              <Coins className="w-8 h-8 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{crypto.toFixed(2)}</div>
-              <div className="text-sm opacity-75">Crypto</div>
+                <Coins className="w-8 h-8 mx-auto mb-2" />
+                <div className="text-2xl font-bold">{crypto.toFixed(2)}</div>
+                <div className="text-sm opacity-75">Crypto</div>
               </div>
-              <div className="bg-purple-500/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
+              <div className={`backdrop-blur-sm rounded-xl p-4 border ${cad >= 0 ? 'bg-purple-500/80 border-purple-400/30' : 'bg-red-600/80 border-red-400/30'}`}>
                 <DollarSign className="w-8 h-8 mx-auto mb-2" />
                 <div className="text-2xl font-bold">${cad.toFixed(2)}</div>
-                <div className="text-sm opacity-75">CAD</div>
+                <div className="text-sm opacity-75">{cad >= 0 ? 'CAD' : 'DEBT!'}</div>
               </div>
-               <div className="bg-purple-700/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
+              <div className="bg-purple-700/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
                 <BarChart3 className="w-8 h-8 mx-auto mb-2" />
                 <div className="text-2xl font-bold">${getPortfolioValue().toFixed(2)}</div>
                 <div className="text-sm opacity-75">Portfolio</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-1 border border-white/20">
-          {[
-            {id:'mining', label:'Mining & Shop', icon: Coins},
-            {id:'trading', label: 'Trading', icon: TrendingUp}
-          ].map(tab => {
-            const Icon = tab.icon; 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCurrentTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-300 
-                  ${currentTab === tab.id ? `bg-purple-600/80 text-white shadow-lg backdrop-blur-sm` : `text-gray-300 hover:text-white hover:bg-white/10`}`}>
-                    <Icon className="w-5 h-5" />
-                    {tab.label}
-                  </button>
-            )
-          })}        
-        </div>
-
-        {selectedStock && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-auto border border-white/20">
-                              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-3xl font-bold">{selectedStock.symbol}</h2>
-                  <p className="text-gray-300">{selectedStock.name}</p>
-                  {shopUpgrades.marketInsight > 0 && (
-                    <div className="mt-2">{getMarketInsight(selectedStock)}</div>
-                  )}
-                </div>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowAdvancedCharts(!showAdvancedCharts)}
-                    className={`px-4 py-2 rounded-lg transition-all backdrop-blur-sm border ${
-                      showAdvancedCharts 
-                        ? 'bg-purple-600/80 border-purple-400/50 text-white' 
-                        : 'bg-white/10 border-white/20 text-gray-300 hover:text-white'
-                    }`}
-                  >
-                    {showAdvancedCharts ? 'Simple Chart' : 'Advanced Chart'}
-                  </button>
-                  <button
-                    onClick={() => setSelectedStock(null)}
-                    className="text-gray-400 hover:text-white text-2xl">×</button>
-                </div>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    {showAdvancedCharts ? (
-                      renderAdvancedChart(selectedStock)
-                    ) : (
-                      <>
-                        <div className="bg-white/5 rounded-xl p-4 mb-4">
-                         <svg width="100%" height="300" className="w-full" viewBox="0 0 600 300">
-                            {selectedStock.history.length > 1 && (() => {
-                              const min = Math.min(...selectedStock.history);
-                              const max = Math.max(...selectedStock.history);
-                              const range = max - min || 1;
-                              const padding = 20;
-                              
-                              const points = selectedStock.history.map((price, index) => {
-                                const x = padding + (index / (selectedStock.history.length - 1)) * (600 - 2 * padding);
-                                const y = padding + (1 - (price - min) / range) * (300 - 2 * padding);
-                                return `${x},${y}`;
-                              }).join(' ');
-                              
-                            
-                              const gridLines = [];
-                              for (let i = 1; i <= 5; i++) {
-                                const y = (i / 6) * 300;
-                                gridLines.push(
-                                  <line
-                                    key={`grid-${i}`}
-                                    x1={padding}
-                                    y1={y}
-                                    x2={600 - padding}
-                                    y2={y}
-                                    stroke="#ffffff20"
-                                    strokeWidth="0.5"
-                                  />
-                                );
-                              }
-                              
-                              return (
-                                <g>
-                                  {gridLines}
-                                  <polyline
-                                    points={points}
-                                    fill="none"
-                                    stroke="#a855f7"
-                                    strokeWidth="3"
-                                    className="drop-shadow-lg"
-                                  />
-                    
-                                  {selectedStock.history.length > 0 && (
-                                    <circle
-                                      cx={600 - padding}
-                                      cy={padding + (1 - (selectedStock.price - min) / range) * (300 - 2 * padding)}
-                                      r="4"
-                                      fill="#a855f7"
-                                      className="animate-pulse"
-                                    />
-                                  )}
-                                </g>
-                              );
-                            })()}
-                          </svg>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div className="bg-white/5 rounded-xl p-3">
-                            <div className="text-2xl font-bold text-purple-400">${selectedStock.price.toFixed(2)}</div>
-                            <div className="text-sm text-gray-300">Current Price</div>
-                          </div>
-                           <div className="bg-white/5 rounded-xl p-3">
-                            <div className="text-2xl font-bold text-green-400">${Math.max(...selectedStock.history).toFixed(2)}</div>
-                            <div className="text-sm text-gray-300">Day High</div>
-                          </div>
-                          <div className="bg-white/5 rounded-xl p-3">
-                            <div className="text-2xl font-bold text-red-400">${Math.min(...selectedStock.history).toFixed(2)}</div>
-                            <div className="text-sm text-gray-300">Day Low</div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                      <div className="bg-white/5 rounded-xl p-4">
-                      <h3 className="font-bold mb-3">Your Position</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Shares Owned:</span>
-                          <span className="font-bold">{(portfolio[selectedStock.id] || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Value:</span>
-                          <span className="font-bold">${((portfolio[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-
- <div className="bg-white/5 rounded-xl p-4">
-                      <h3 className="font-bold mb-3">Trade</h3>
-                      <div className="space-y-3">
-                        <input
-                          type="number"
-                          placeholder="Number of shares"
-                          value={tradeAmount[selectedStock.id] || ''}
-                          onChange={(e) => setTradeAmount({
-                            ...tradeAmount, 
-                            [selectedStock.id]: parseFloat(e.target.value) || ''
-                          })}
-                          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 backdrop-blur-sm"
-                        />
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setMaxBuy(selectedStock.id)}
-                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
-                          >
-                            Max Buy
-                          </button>
-                          <button
-                            onClick={() => setMaxSell(selectedStock.id)}
-                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
-                          >
-                            Max Sell
-                          </button>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => buyStock(selectedStock.id, tradeAmount[selectedStock.id])}
-                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
-                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
-                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
-                                ? 'bg-green-600/80 hover:bg-green-600 cursor-pointer'
-                                : 'bg-gray-600/50 cursor-not-allowed'
-                            }`}
-                          >
-                            Buy
-                          </button>
-                          <button
-                            onClick={() => sellStock(selectedStock.id, tradeAmount[selectedStock.id])}
-                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
-                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
-                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
-                                ? 'bg-red-600/80 hover:bg-red-600 cursor-pointer'
-                                : 'bg-gray-600/50 cursor-not-allowed'
-                            }`}
-                          >
-                            Sell
-                          </button>
-                        </div>
-                        
-                        <div className="text-sm text-gray-300 text-center">
-                          Cost: ${((tradeAmount[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
+          </div>
 
-        )}
+          <div className="flex mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-1 border border-white/20">
+            {[
+              {id:'mining', label:'Mining & Shop', icon: Coins},
+              {id:'trading', label: 'Trading', icon: TrendingUp},
+              {id:'recruits', label: 'Recruits', icon: Users}
+            ].map(tab => {
+              const Icon = tab.icon; 
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCurrentTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-300 
+                    ${currentTab === tab.id ? `bg-purple-600/80 text-white shadow-lg backdrop-blur-sm` : `text-gray-300 hover:text-white hover:bg-white/10`}`}>
+                      <Icon className="w-5 h-5" />
+                      {tab.label}
+                      {tab.id === 'recruits' && hiredRecruits.length > 0 && (
+                        <span className="bg-green-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                          {hiredRecruits.length}
+                        </span>
+                      )}
+                    </button>
+              )
+            })}        
+          </div>
 
-        {currentTab === 'mining' && (
+          {/* Mining Tab */}
+          {currentTab === 'mining' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Mining Section */}
@@ -876,11 +639,7 @@ const CryptoTradingGame = () => {
                       <span className="font-bold text-purple-400">{(getCurrentCooldown() / 1000).toFixed(1)}s</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Next Level Reduction:</span>
-                      <span className="font-bold text-green-400">-0.1s</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Manual Mining Rate:</span>
+                      <span>Mining Rate:</span>
                       <span className="font-bold text-purple-400">{(baseMineAmount + (shopUpgrades.miningBoost * 0.5)).toFixed(1)} crypto</span>
                     </div>
                     {shopUpgrades.autoMiner > 0 && (
@@ -890,16 +649,10 @@ const CryptoTradingGame = () => {
                           <span className="font-bold text-blue-400">{shopUpgrades.autoMiner} bots</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Auto Mining Rate:</span>
+                          <span>Auto Rate:</span>
                           <span className="font-bold text-blue-400">{(shopUpgrades.autoMiner * (baseMineAmount + (shopUpgrades.miningBoost * 0.5))).toFixed(1)} crypto/10s</span>
                         </div>
                       </>
-                    )}
-                    {shopUpgrades.luckyMiner > 0 && (
-                      <div className="flex justify-between">
-                        <span>Lucky Chance:</span>
-                        <span className="font-bold text-yellow-400">{(shopUpgrades.luckyMiner * 10)}%</span>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -1039,10 +792,7 @@ const CryptoTradingGame = () => {
                               {item.id === 'autoMiner' && `${currentLevel} bots mining ${(currentLevel * (baseMineAmount + (shopUpgrades.miningBoost * 0.5))).toFixed(1)} crypto every 10s`}
                               {item.id === 'miningBoost' && `Current bonus: +${(currentLevel * 0.5).toFixed(1)} crypto per mine`}
                               {item.id === 'luckyMiner' && `Current bonus: ${currentLevel * 10}% lucky chance`}
-                              {item.id === 'marketInsight' && currentLevel >= 1 && `Market insights active`}
-                              {item.id === 'portfolioInsurance' && `Current protection: ${currentLevel * 5}% loss reduction`}
                               {item.id === 'speedTrader' && `Current speedup: -${(currentLevel * 0.2).toFixed(1)}s cooldown`}
-                              {item.id === 'dividendBonus' && `Current rate: ${(currentLevel * 0.1).toFixed(1)}% every 30s`}
                             </div>
                           </div>
                         )}
@@ -1077,9 +827,6 @@ const CryptoTradingGame = () => {
                           <div>
                             <h3 className="font-bold text-lg text-purple-400">{stock.symbol}</h3>
                             <p className="text-sm text-gray-300">{stock.name}</p>
-                            {shopUpgrades.marketInsight > 0 && (
-                              <div className="mt-1">{getMarketInsight(stock)}</div>
-                            )}
                           </div>
                           <div className="text-right">
                             {renderMiniChart(stock.history)}
@@ -1174,7 +921,6 @@ const CryptoTradingGame = () => {
                             transaction.type === 'SELL' ? 'bg-red-600/80 text-white' :
                             transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE' ? 'bg-blue-600/80 text-white' :
                             transaction.type === 'CONVERT' ? 'bg-purple-600/80 text-white' :
-                            transaction.type === 'DIVIDEND' ? 'bg-yellow-600/80 text-white' :
                             'bg-gray-600/80 text-white'
                           }`}>
                             {transaction.type}
@@ -1184,7 +930,6 @@ const CryptoTradingGame = () => {
                             {transaction.type === 'SELL' && `SOLD ${transaction.amount.toFixed(2)} ${transaction.symbol}`}
                             {(transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE') && `MINED ${transaction.amount.toFixed(2)} CRYPTO`}
                             {transaction.type === 'CONVERT' && `CONVERTED ${transaction.amount.toFixed(2)} CRYPTO`}
-                            {transaction.type === 'DIVIDEND' && `DIVIDEND FROM PORTFOLIO`}
                             {transaction.type === 'UPGRADE' && `UPGRADED ${transaction.symbol}`}
                           </span>
                         </div>
@@ -1203,95 +948,353 @@ const CryptoTradingGame = () => {
             </div>
           )}
 
-          {/* Shop Tab */}
-          {currentTab === 'shop' && (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-              <h2 className="text-2xl font-bold mb-6">Shop</h2>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {shopItems.map(item => {
-                  const Icon = item.icon;
-                  const currentLevel = shopUpgrades[item.id];
-                  const cost = getShopItemCost(item);
-                  const isMaxed = currentLevel >= item.maxLevel;
-                  const canAfford = cad >= cost;
+          {/* Recruits Tab */}
+          {currentTab === 'recruits' && (
+            <div className="space-y-6">
+              {/* Hired Recruits Section */}
+              {hiredRecruits.length > 0 && (
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <Briefcase className="w-6 h-6" />
+                    Your Team ({hiredRecruits.length})
+                  </h2>
                   
-                  return (
-                    <div key={item.id} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="bg-purple-600/30 rounded-lg p-3">
-                          <Icon className="w-8 h-8 text-purple-400" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-purple-400 mb-2">{item.name}</h3>
-                          <p className="text-gray-300 text-sm mb-3">{item.description}</p>
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-sm text-gray-400">
-                              Level {currentLevel}/{item.maxLevel}
-                            </span>
-                            <div className="flex-1 mx-3 bg-white/10 rounded-full h-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {hiredRecruits.map(hired => {
+                      const recruit = recruitableCharacters.find(r => r.id === hired.id);
+                      if (!recruit) return null;
+                      
+                      const Icon = recruit.icon;
+                      const cooldownRemaining = getRemainingCooldown(hired.id);
+                      const canTrade = canRecruitTrade(hired.id);
+                      
+                      return (
+                        <div key={hired.id} className="bg-gradient-to-br from-green-600/20 to-blue-600/20 backdrop-blur-sm rounded-xl p-6 border border-green-400/30">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="bg-green-600/30 rounded-lg p-3">
+                              <Icon className="w-8 h-8 text-green-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-green-400 mb-1">{recruit.name}</h3>
+                              <p className="text-green-300 text-sm mb-2">{recruit.title}</p>
+                              <div className="text-xs text-gray-300 mb-3">
+                                <div className="mb-1">💰 Salary: ${recruit.salary}/trade</div>
+                                <div className="mb-1">🎯 Specialty: {recruit.specialty}</div>
+                                <div className="mb-1">💳 Max Debt: ${recruit.maxDebt}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm text-gray-400">Trading Status</span>
+                              <span className={`text-sm font-bold ${canTrade ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {canTrade ? 'Ready' : `Cooldown: ${cooldownRemaining}s`}
+                              </span>
+                            </div>
+                            <div className="bg-white/10 rounded-full h-2">
                               <div 
-                                className="bg-purple-600 h-full rounded-full transition-all duration-300"
-                                style={{width: `${(currentLevel / item.maxLevel) * 100}%`}}
+                                className="bg-green-600 h-full rounded-full transition-all duration-1000"
+                                style={{width: canTrade ? '100%' : `${Math.max(0, 100 - (cooldownRemaining / (recruit.cooldownTime / 1000)) * 100)}%`}}
                               />
                             </div>
                           </div>
+                          
+                          <div className="text-xs text-gray-300 mb-4 bg-white/5 rounded-lg p-3">
+                            <div className="font-bold text-green-400 mb-1">"{recruit.personality}"</div>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => executeRecruitTrade(hired)}
+                              disabled={!canTrade}
+                              className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all duration-300 ${
+                                canTrade
+                                  ? 'bg-green-600/80 hover:bg-green-600 text-white cursor-pointer transform hover:scale-105'
+                                  : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                              }`}
+                            >
+                              {canTrade ? 'Force Trade' : 'On Cooldown'}
+                            </button>
+                            <button
+                              onClick={() => fireRecruit(hired.id)}
+                              className="bg-red-600/80 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-bold transition-all duration-300"
+                            >
+                              Fire
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-400">
-                          {isMaxed ? 'MAX LEVEL' : `Next: ${cost}`}
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-6 bg-white/5 rounded-xl p-4">
+                    <h4 className="font-bold mb-2 text-yellow-400">⚠️ Debt Management</h4>
+                    <p className="text-sm text-gray-300">
+                      Your recruits can put you into debt to make investments! Each recruit has a maximum debt limit they can incur.
+                      Total current debt: <span className={`font-bold ${cad < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        ${cad < 0 ? Math.abs(cad).toFixed(2) : '0.00'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Available Recruits Section */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+              <div className="mt-2 mb-6 bg-gradient-to-r from-yellow-600/20 to-red-600/20 rounded-xl p-4 border border-yellow-400/30">
+                  <h4 className="font-bold mb-2 text-yellow-400 flex items-center gap-2">
+                    💡 How Recruits Work
+                  </h4>
+                <div className="text-sm text-gray-300 space-y-2">
+                    <p><strong>• Automatic Trading:</strong> Hired recruits will automatically make trades based on their strategy and cooldown timer.</p>
+                    <p><strong>• Debt System:</strong> Recruits can spend money you don't have, putting you into debt up to their individual limits.</p>
+                    <p><strong>• Salary Costs:</strong> Each trade costs you their salary, paid automatically.</p>
+                    <p><strong>• Different Strategies:</strong> Each recruit has unique trading patterns - some are safer, others more aggressive.</p>
+                    <p><strong>• Manual Override:</strong> You can force a recruit to trade immediately if they're off cooldown.</p>
+                  </div>
+                </div>
+
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <UserPlus className="w-6 h-6" />
+                  Available Recruits
+                </h2>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {recruitableCharacters.map(recruit => {
+                    const Icon = recruit.icon;
+                    const isHired = hiredRecruits.find(r => r.id === recruit.id);
+                    const totalDebt = Math.max(0, -cad);
+                    const canAfford = cad >= recruit.hireCost || (totalDebt + recruit.hireCost <= 1000);
+                    
+                    return (
+                      <div key={recruit.id} className={`backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 ${
+                        isHired 
+                          ? 'bg-gray-600/20 border-gray-400/30 opacity-50' 
+                          : 'bg-white/10 border-white/20 hover:bg-white/15 hover:shadow-lg hover:shadow-purple-500/10'
+                      }`}>
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="bg-purple-600/30 rounded-lg p-3">
+                            <Icon className="w-8 h-8 text-purple-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-purple-400 mb-1">{recruit.name}</h3>
+                            <p className="text-purple-300 text-sm mb-2">{recruit.title}</p>
+                            <p className="text-gray-300 text-xs mb-3">{recruit.description}</p>
+                          </div>
                         </div>
+                        
+                        <div className="space-y-3 mb-4">
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="bg-white/5 rounded-lg p-2">
+                              <div className="text-gray-400">Hire Cost</div>
+                              <div className="font-bold text-yellow-400">${recruit.hireCost}</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-2">
+                              <div className="text-gray-400">Salary</div>
+                              <div className="font-bold text-red-400">${recruit.salary}/trade</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-2">
+                              <div className="text-gray-400">Cooldown</div>
+                              <div className="font-bold text-blue-400">{recruit.cooldownTime / 1000}s</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-2">
+                              <div className="text-gray-400">Max Debt</div>
+                              <div className="font-bold text-orange-400">${recruit.maxDebt}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <div className="text-xs text-gray-400 mb-1">Strategy</div>
+                            <div className="text-sm text-gray-300">{recruit.specialty}</div>
+                          </div>
+                          
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <div className="text-xs text-gray-400 mb-1">Personality</div>
+                            <div className="text-sm text-purple-300 italic">"{recruit.personality}"</div>
+                          </div>
+                        </div>
+                        
                         <button
-                          onClick={() => buyShopItem(item.id)}
-                          disabled={isMaxed || !canAfford}
-                          className={`px-6 py-2 rounded-lg font-bold transition-all duration-300 ${
-                            isMaxed 
+                          onClick={() => hireRecruit(recruit.id)}
+                          disabled={isHired || !canAfford}
+                          className={`w-full py-3 rounded-lg font-bold transition-all duration-300 ${
+                            isHired 
                               ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
                               : canAfford
                                 ? 'bg-purple-600/80 hover:bg-purple-600 text-white cursor-pointer transform hover:scale-105'
                                 : 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
                           }`}
                         >
-                          {isMaxed ? 'MAXED' : canAfford ? 'UPGRADE' : 'INSUFFICIENT FUNDS'}
+                          {isHired ? 'ALREADY HIRED' : canAfford ? 'HIRE' : 'INSUFFICIENT FUNDS'}
                         </button>
-                      </div>
-                      
-                      {/* Show current bonus if owned */}
-                      {currentLevel > 0 && (
-                        <div className="mt-3 pt-3 border-t border-white/10">
-                          <div className="text-sm text-green-400">
-                            {item.id === 'miningBoost' && `Current bonus: +${(currentLevel * 0.5).toFixed(1)} crypto per mine`}
-                            {item.id === 'luckyMiner' && `Current bonus: ${currentLevel * 10}% lucky chance`}
-                            {item.id === 'marketInsight' && currentLevel >= 1 && `Market insights active`}
-                            {item.id === 'portfolioInsurance' && `Current protection: ${currentLevel * 5}% loss reduction`}
-                            {item.id === 'speedTrader' && `Current speedup: -${(currentLevel * 0.2).toFixed(1)}s cooldown`}
-                            {item.id === 'dividendBonus' && `Current rate: ${(currentLevel * 0.1).toFixed(1)}% every 30s`}
+                        
+                        {!canAfford && !isHired && totalDebt + recruit.hireCost <= 1000 && (
+                          <div className="mt-2 text-xs text-yellow-400 text-center">
+                            Can hire with debt (Current debt: ${totalDebt.toFixed(2)})
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
-        </div>
-        
-        {/* Footer */}
-        <footer className="mt-12 text-center">
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <div className="text-gray-400 text-sm">
-              <p className="mb-2">Created with NextJS by Qazi (w/ help from VSCode Copilot and Claude AI 🥀🥀)</p>
-              <div className="flex justify-center gap-4 mt-3">
-                <a href="https://github.com/insomnic123" target="_blank" className="hover:text-purple-400 transition-colors">GitHub</a>
-                <a href="https://www.linkedin.com/in/qaziayan/" target="_blank" className="hover:text-purple-400 transition-colors">LinkedIn</a>
-                <a href="https://qazi-ayan.vercel.app/" target="_blank" className="hover:text-purple-400 transition-colors">Portfolio</a>
+
+          {/* Selected Stock Modal */}
+          {selectedStock && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-auto border border-white/20">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-3xl font-bold">{selectedStock.symbol}</h2>
+                    <p className="text-gray-300">{selectedStock.name}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedStock(null)}
+                    className="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                  
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <div className="bg-white/5 rounded-xl p-4 mb-4">
+                     <svg width="100%" height="300" className="w-full" viewBox="0 0 600 300">
+                        {selectedStock.history.length > 1 && (() => {
+                          const min = Math.min(...selectedStock.history);
+                          const max = Math.max(...selectedStock.history);
+                          const range = max - min || 1;
+                          const padding = 20;
+                          
+                          const points = selectedStock.history.map((price, index) => {
+                            const x = padding + (index / (selectedStock.history.length - 1)) * (600 - 2 * padding);
+                            const y = padding + (1 - (price - min) / range) * (300 - 2 * padding);
+                            return `${x},${y}`;
+                          }).join(' ');
+                          
+                          return (
+                            <polyline
+                              points={points}
+                              fill="none"
+                              stroke="#a855f7"
+                              strokeWidth="3"
+                              className="drop-shadow-lg"
+                            />
+                          );
+                        })()}
+                      </svg>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-purple-400">${selectedStock.price.toFixed(2)}</div>
+                        <div className="text-sm text-gray-300">Current Price</div>
+                      </div>
+                       <div className="bg-white/5 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-green-400">${Math.max(...selectedStock.history).toFixed(2)}</div>
+                        <div className="text-sm text-gray-300">Day High</div>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <div className="text-2xl font-bold text-red-400">${Math.min(...selectedStock.history).toFixed(2)}</div>
+                        <div className="text-sm text-gray-300">Day Low</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                      <div className="bg-white/5 rounded-xl p-4">
+                      <h3 className="font-bold mb-3">Your Position</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Shares Owned:</span>
+                          <span className="font-bold">{(portfolio[selectedStock.id] || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Value:</span>
+                          <span className="font-bold">${((portfolio[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <h3 className="font-bold mb-3">Trade</h3>
+                      <div className="space-y-3">
+                        <input
+                          type="number"
+                          placeholder="Number of shares"
+                          value={tradeAmount[selectedStock.id] || ''}
+                          onChange={(e) => setTradeAmount({
+                            ...tradeAmount, 
+                            [selectedStock.id]: parseFloat(e.target.value) || ''
+                          })}
+                          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 backdrop-blur-sm"
+                        />
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setMaxBuy(selectedStock.id)}
+                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
+                          >
+                            Max Buy
+                          </button>
+                          <button
+                            onClick={() => setMaxSell(selectedStock.id)}
+                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
+                          >
+                            Max Sell
+                          </button>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => buyStock(selectedStock.id, tradeAmount[selectedStock.id])}
+                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
+                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
+                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
+                                ? 'bg-green-600/80 hover:bg-green-600 cursor-pointer'
+                                : 'bg-gray-600/50 cursor-not-allowed'
+                            }`}
+                          >
+                            Buy
+                          </button>
+                          <button
+                            onClick={() => sellStock(selectedStock.id, tradeAmount[selectedStock.id])}
+                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
+                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
+                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
+                                ? 'bg-red-600/80 hover:bg-red-600 cursor-pointer'
+                                : 'bg-gray-600/50 cursor-not-allowed'
+                            }`}
+                          >
+                            Sell
+                          </button>
+                        </div>
+                        
+                        <div className="text-sm text-gray-300 text-center">
+                          Cost: ${((tradeAmount[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </footer>
+          )}
+
+          {/* Footer */}
+          <footer className="mt-12 text-center">
+            <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+              <div className="text-gray-400 text-sm">
+                <p className="mb-2">Created with React by Qazi (w/ help from VSCode Copilot and Claude AI 🥀🥀)</p>
+                <div className="flex justify-center gap-4 mt-3">
+                  <a href="https://github.com/insomnic123" target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors">GitHub</a>
+                  <a href="https://www.linkedin.com/in/qaziayan/" target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors">LinkedIn</a>
+                  <a href="https://qazi-ayan.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors">Portfolio</a>
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );
