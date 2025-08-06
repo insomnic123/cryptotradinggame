@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {TrendingUp, TrendingDown, Coins, DollarSign, Clock, ShoppingCart, BarChart3, Activity, Zap, Target, Star, Bot, Users, UserPlus, Briefcase, Coffee, Brain } from 'lucide-react';
+import Image from "next/image";
 
 const CryptoTradingGame = () => {
   // Default game states
@@ -928,17 +929,17 @@ const buyStock = (stockID, amount) => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-purple-900 text-white relative overflow-hidden">
     <InteractiveGridBackground />
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-black-100 text-white">
       <AchievementNotification achievement={showAchievementNotification} />
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-200/15"></div>
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-100/10 via-transparent to-purple-200/15"></div>
       <div className="relative z-10 p-4">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-4 border border-white/20 shadow-2xl">
-            <h1 className="text-5xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              CRiDO
-            </h1>
+          <div className="flex justify-center mb-3">
+              <Image src="/YEAR IN (2).png" width='300' height='300' alt="CRiDO Logo"/>
+            </div>
             <p className="text-center">CRiDO is an online clicker-based game where you mine crypto and invest it to grow your portfolio</p>
             <p className="text-center mb-6 opacity-50">Notes: Some recruits functions are buggy, data is <strong>NOT SAVED</strong>.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
