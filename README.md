@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CRiDO (In Development)
+A Stock Trading Simulator Game by Qazi <br/>
+Built with help from Claude AI, GitHub Copilot, and ChatGPT (see below)
 
-## Getting Started
+🔗 <a href="https://crido.vercel.app" target="_blank">Try the Game!</a> <br/>
+🤝 <a href="https://www.linkedin.com/in/qaziayan/" target="_blank">Let’s Connect</a>
 
-First, run the development server:
+## 🎮 Game Overview
+CRiDO is an interactive tycoon-style game where you mine cryptocurrency, convert it into cash, trade stocks, and grow your net worth. Inspired by classics like Cookie Clicker and also a Summer of Making project called <a href="https://cryptotycoon.vercel.app/">defi Empire - Web3 Tycoon </a>(I could not find the OG maker :(( ), CRiDO lets players upgrade systems, build a trading team, and experiment with market mechanics, all in a playful, fun environment.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Core Features (So Far)
+- ⛏️ Mine cryptocurrency
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 💸 Exchange crypto for cash
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- ⚡ Reduce mining cooldowns
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 🔧 Buy upgrades (Auto-miners, mining bonuses, etc.)
 
-## Learn More
+- 📈 Buy stocks (and sometimes lose cash!)
 
-To learn more about Next.js, take a look at the following resources:
+- 💼 Track your investment portfolio
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 💰 Sell stocks for gains (or losses)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 👥 Hire agents to invest on your behalf
 
-## Deploy on Vercel
+- 🏆 Earn in-game achievements
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚧 Upcoming Features
+- 👤 Player profiles and data saving
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 🧠 XP system and player levels
+
+- 📊 Global leaderboards
+
+Got an idea or feedback? Reach out through the link above-- I’d love to hear it!
+
+## 🧠 Development Challenges
+- Relearning JavaScript functions and quirks
+
+- Diving back into core React concepts
+
+- Building AI-inspired investment agents
+
+- Simulating realistic stock market fluctuations
+
+## 🤖 AI Usage Disclosure
+AI tools were used thoughtfully throughout development, primarily to assist with frontend design, example data generation, debugging tricky issues, commenting, and speeding up the learning process—not to write the entire game. The project remains a hands-on learning experience from start to finish. It was also used to spice up this README ahah

@@ -14,6 +14,7 @@ const CryptoTradingGame = () => {
   const [achievements, setAchievements] = useState([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState([]);
   const [showAchievementNotification, setShowAchievementNotification] = useState(null);
+  const [totalInvested, setTotalInvested] = useState(0)
 
 
   // Recruits system
@@ -33,12 +34,12 @@ const CryptoTradingGame = () => {
 
   // base stock data
   const [stocks, setStocks] = useState([
-    {id: 1, name: 'Hack the Skies', symbol: 'HTS', price: 100, history: [100], volatility: 0.02, trend: 0.001},
-    {id: 2, name: 'Raiyan & Co.', symbol: 'RYI', price: 200, history: [200], volatility: 0.03, trend: -0.002},
+    {id: 1, name: 'hacktheskies.com', symbol: 'HTS', price: 100, history: [100], volatility: 0.05, trend: 0.01},
+    {id: 2, name: 'LuthorCorp', symbol: 'LTC', price: 200, history: [200], volatility: 0.05, trend: -0.002},
     {id: 3, name: 'Doofenshmirtz Evil Incorporated', symbol: 'DEI', price: 75, history: [75], volatility: 0.015, trend: -0.001 },
-    {id: 4, name: 'Kababia', symbol: 'KBA', price: 25, history: [25], volatility: 0.025, trend: 0.0005 },
-    {id: 5, name: 'ClosedAI.', symbol: 'CAI', price: 75, history: [75], volatility: 0.015, trend: -0.001 },
-    {id: 6, name: 'DJLJ Physics Solutions', symbol: 'DCTI', price: 150, history: [150], volatility: 0.04, trend: 0.003 }
+    {id: 4, name: 'Kababia', symbol: 'KBA', price: 25, history: [25], volatility: 0.055, trend: 0.005 },
+    {id: 5, name: 'DJLJ Physics Solutions', symbol: 'DCTI', price: 150, history: [150], volatility: 0.04, trend: 0.003 },
+    {id: 6, name: 'Strayton Wokamont', symbol: 'SHOO', price: 5, history: [5], volatility: 0.07, trend: 0.03 },
   ])
 
   // basic ai generated achievements
@@ -114,7 +115,7 @@ const CryptoTradingGame = () => {
       category: 'mining',
       rarity: 'legendary',
       checkCondition: (gameState) => gameState.consecutiveLuckyMines >= 5
-    }
+    },
   ]
 
   const AchievementNotification = ({ achievement }) => {
@@ -127,7 +128,7 @@ const CryptoTradingGame = () => {
     epic: 'from-purple-600 to-purple-700 border-purple-400',
     legendary: 'from-yellow-600 to-yellow-700 border-yellow-400'
   };
-  
+
   return (
     <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2">
       <div className={`bg-gradient-to-r ${rarityColors[achievement.rarity]} backdrop-blur-lg rounded-xl p-4 border-2 shadow-2xl max-w-sm`}>
@@ -426,7 +427,7 @@ const CryptoTradingGame = () => {
       name: 'Auto Miner Bot',
       description: 'Automatically mines crypto every 10 seconds. Stackable!',
       icon: Bot,
-      baseCost: 500,
+      baseCost: 750,
       maxLevel: 50,
       costMultiplier: 1.4
     },
@@ -622,50 +623,66 @@ const CryptoTradingGame = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const buyStock = (stockID, amount) => {
-    if (!amount || amount <= 0) return;
-      
-      const stock = stocks.find(s => s.id === stockID);
-      const cost = stock.price * amount;
-
-      if (cad >= cost) {
-        setCad(prev => prev - cost);
-        setPortfolio(prev => ({
-          ...prev,
-          [stockID]: (prev[stockID] || 0) + amount
-        }));
-        addToTransactionLog('BUY', stock.symbol, amount, stock.price);
-        setTradeAmount({...tradeAmount, [stockID]: ''});
-        
-        // Update stats
-        setGameStats(prev => ({
-          ...prev,
-          totalTrades: prev.totalTrades + 1
-        }));
-        
-        setTimeout(checkAchievements, 100);
-    }
-  }
-
-  const sellStock = (stockID, amount) => {
-    if (!amount || amount <= 0) return;
+const buyStock = (stockID, amount) => {
+  if (!amount || amount <= 0) return;
     
     const stock = stocks.find(s => s.id === stockID);
-    const owned = portfolio[stockID] || 0;
-    const toSell = Math.min(amount, owned);
+    const cost = stock.price * amount;
 
-    if (toSell > 0) {
-      let revenue = stock.price * toSell;
-      
-      setCad(prev => prev + revenue);
+    if (cad >= cost) {
+      setCad(prev => prev - cost);
       setPortfolio(prev => ({
         ...prev,
-        [stockID]: Math.max(0, owned - toSell)
+        [stockID]: (prev[stockID] || 0) + amount
       }));
-      addToTransactionLog('SELL', stock.symbol, toSell, stock.price);
+      
+      setTotalInvested(prev => prev + cost);
+      
+      addToTransactionLog('BUY', stock.symbol, amount, stock.price);
       setTradeAmount({...tradeAmount, [stockID]: ''});
-    }
+      
+      setGameStats(prev => ({
+        ...prev,
+        totalTrades: prev.totalTrades + 1
+      }));
+      
+      setTimeout(checkAchievements, 100);
   }
+}
+
+  const sellStock = (stockID, amount) => {
+  if (!amount || amount <= 0) return;
+  
+  const stock = stocks.find(s => s.id === stockID);
+  const owned = portfolio[stockID] || 0;
+  const toSell = Math.min(amount, owned);
+
+  if (toSell > 0) {
+    let revenue = stock.price * toSell;
+    
+    setCad(prev => prev + revenue);
+    setPortfolio(prev => ({
+      ...prev,
+      [stockID]: Math.max(0, owned - toSell)
+    }));
+    
+    setTotalInvested(prev => prev - revenue);
+    
+    addToTransactionLog('SELL', stock.symbol, toSell, stock.price);
+    setTradeAmount({...tradeAmount, [stockID]: ''});
+  }
+}
+
+  const getNetGainLoss = () => {
+    const currentValue = getPortfolioValue();
+    return currentValue - totalInvested;
+  };
+
+  const getNetGainLossPercentage = () => {
+    if (totalInvested === 0) return 0;
+    const gainLoss = getNetGainLoss();
+    return (gainLoss / totalInvested) * 100;
+  };
 
   const getPortfolioValue = () => {
     return Object.entries(portfolio).reduce((total, [stockID, shares]) => {
@@ -837,19 +854,93 @@ const CryptoTradingGame = () => {
     );
   };
 
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <AchievementNotification achievement={showAchievementNotification} />
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-purple-600/20"></div>
+    const InteractiveGridBackground = () => {
+      const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+      const [windowSize, setWindowSize] = useState({ width: 1920, height: 1080 });
 
+      useEffect(() => {
+        // Set initial window size
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+
+        const handleMouseMove = (e) => {
+          setMousePos({ x: e.clientX, y: e.clientY });
+        };
+
+        const handleResize = () => {
+          setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+          window.removeEventListener('mousemove', handleMouseMove);
+          window.removeEventListener('resize', handleResize);
+        };
+      }, []);
+
+      const gridOffsetX = (mousePos.x / windowSize.width - 0.5) * 20;
+      const gridOffsetY = (mousePos.y / windowSize.height - 0.5) * 20;
+      const rotateAmount = (mousePos.x / windowSize.width - 0.5) * 2;
+
+      return (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          {/* Base static grid */}
+          <div 
+            className="absolute inset-0 opacity-15"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(59, 130, 246, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.2) 1px, transparent 1px)
+              `,
+              backgroundSize: '30px 30px'
+            }}
+          />
+          
+          <div 
+            className="absolute inset-0 opacity-25"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(34, 197, 94, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 197, 94, 0.3) 1px, transparent 1px)
+              `,
+              backgroundSize: '30px 30px',
+              transform: `translate(${gridOffsetX}px, ${gridOffsetY}px) rotate(${rotateAmount}deg)`,
+              transition: 'none'
+            }}
+          />
+          
+          <div 
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(168, 85, 247, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168, 85, 247, 0.2) 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px',
+              transform: `translate(${-gridOffsetX * 0.5}px, ${-gridOffsetY * 0.5}px) scale(${1 + Math.abs(rotateAmount) * 0.1})`,
+              transition: 'none'
+            }}
+          />
+        </div>
+      );
+    };
+
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+    <InteractiveGridBackground />
+    <div className="min-h-screen bg-gray-900 text-white">
+      <AchievementNotification achievement={showAchievementNotification} />
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-200/15"></div>
       <div className="relative z-10 p-4">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-4 border border-white/20 shadow-2xl">
-            <h1 className="text-3xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              CRiDO | Investment Simulator
+            <h1 className="text-5xl font-bold mb-4 text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              CRiDO
             </h1>
             <p className="text-center">CRiDO is an online clicker-based game where you mine crypto and invest it to grow your portfolio</p>
-            <p className="text-center mb-6 opacity-50">Notes: Some recruits functions are buggy, data is not saved.</p>
+            <p className="text-center mb-6 opacity-50">Notes: Some recruits functions are buggy, data is <strong>NOT SAVED</strong>.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="bg-purple-600/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
                 <Coins className="w-8 h-8 mx-auto mb-2" />
@@ -864,6 +955,29 @@ const CryptoTradingGame = () => {
               <div className="bg-purple-700/80 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
                 <BarChart3 className="w-8 h-8 mx-auto mb-2" />
                 <div className="text-2xl font-bold">${getPortfolioValue().toFixed(2)}</div>
+                <div className="flex items-center justify-center gap-2 text-sm">
+                    {(() => {
+                      const netGainLoss = getNetGainLoss();
+                      const percentage = getNetGainLossPercentage();
+                      const isPositive = netGainLoss >= 0;
+                      
+                      return (
+                        <>
+                          <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
+                            {isPositive ? '+' : ''}${netGainLoss.toFixed(2)}
+                          </span>
+                          <span className={`${isPositive ? 'text-green-400' : 'text-red-400'} font-medium`}>
+                            ({isPositive ? '+' : ''}{percentage.toFixed(1)}%)
+                          </span>
+                          {isPositive ? (
+                            <TrendingUp className="w-4 h-4 text-green-400" />
+                          ) : netGainLoss < 0 ? (
+                            <TrendingDown className="w-4 h-4 text-red-400" />
+                          ) : null}
+                        </>
+                      );
+                    })()}
+                  </div>
                 <div className="text-sm opacity-75">Portfolio</div>
               </div>
             </div>
@@ -909,8 +1023,8 @@ const CryptoTradingGame = () => {
                       disabled={!canMine()}
                       className={`w-32 h-32 rounded-full text-xl font-bold transition-all duration-300 backdrop-blur-sm border-2 ${
                         canMine() 
-                          ? 'bg-purple-600/80 hover:bg-purple-600 cursor-pointer transform hover:scale-105 border-purple-400/50 shadow-2xl shadow-purple-500/25' 
-                          : 'bg-gray-600/50 cursor-not-allowed border-gray-400/30'
+                          ? 'bg-green-500/80 hover:bg-green-600 cursor-pointer transform hover:scale-105 border-green-400/60 shadow-2xl shadow-green-400/35' 
+                          : 'bg-red-600/50 cursor-not-allowed border-red-400/30'
                       }`}
                     >
                       {canMine() ? 'MINE!' : timeLeft + 's'}
@@ -1006,6 +1120,50 @@ const CryptoTradingGame = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+                            {/* Transaction Log */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Transaction Log
+                </h3>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {transactionLog.length === 0 ? (
+                    <div className="text-gray-400 text-center py-4">No transactions yet</div>
+                  ) : (
+                    transactionLog.map(transaction => (
+                      <div key={transaction.id} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-400">{transaction.timestamp}</span>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            transaction.type === 'BUY' ? 'bg-green-600/80 text-white' :
+                            transaction.type === 'SELL' ? 'bg-red-600/80 text-white' :
+                            transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE' ? 'bg-blue-600/80 text-white' :
+                            transaction.type === 'CONVERT' ? 'bg-purple-600/80 text-white' :
+                            'bg-gray-600/80 text-white'
+                          }`}>
+                            {transaction.type}
+                          </span>
+                          <span className="font-medium">
+                            {transaction.type === 'BUY' && `BOUGHT ${transaction.amount.toFixed(2)} ${transaction.symbol}`}
+                            {transaction.type === 'SELL' && `SOLD ${transaction.amount.toFixed(2)} ${transaction.symbol}`}
+                            {(transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE') && `MINED ${transaction.amount.toFixed(2)} CRYPTO`}
+                            {transaction.type === 'CONVERT' && `CONVERTED ${transaction.amount.toFixed(2)} CRYPTO`}
+                            {transaction.type === 'UPGRADE' && `UPGRADED ${transaction.symbol}`}
+                          </span>
+                        </div>
+                        <div className={`font-bold ${
+                          transaction.type === 'BUY' || transaction.type === 'UPGRADE' ? 'text-red-400' :
+                          transaction.isProfit ? 'text-green-400' : 'text-green-400'
+                        }`}>
+                          {transaction.type === 'BUY' || transaction.type === 'UPGRADE' ? '-' : '+'}
+                          ${transaction.total ? transaction.total.toFixed(2) : (transaction.amount * transaction.price).toFixed(2)}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1189,50 +1347,6 @@ const CryptoTradingGame = () => {
                   })}
                 </div>
               </div>
-
-              {/* Transaction Log */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Transaction Log
-                </h3>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {transactionLog.length === 0 ? (
-                    <div className="text-gray-400 text-center py-4">No transactions yet</div>
-                  ) : (
-                    transactionLog.map(transaction => (
-                      <div key={transaction.id} className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400">{transaction.timestamp}</span>
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${
-                            transaction.type === 'BUY' ? 'bg-green-600/80 text-white' :
-                            transaction.type === 'SELL' ? 'bg-red-600/80 text-white' :
-                            transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE' ? 'bg-blue-600/80 text-white' :
-                            transaction.type === 'CONVERT' ? 'bg-purple-600/80 text-white' :
-                            'bg-gray-600/80 text-white'
-                          }`}>
-                            {transaction.type}
-                          </span>
-                          <span className="font-medium">
-                            {transaction.type === 'BUY' && `BOUGHT ${transaction.amount.toFixed(2)} ${transaction.symbol}`}
-                            {transaction.type === 'SELL' && `SOLD ${transaction.amount.toFixed(2)} ${transaction.symbol}`}
-                            {(transaction.type === 'MINE' || transaction.type === 'LUCKY_MINE' || transaction.type === 'AUTO_MINE') && `MINED ${transaction.amount.toFixed(2)} CRYPTO`}
-                            {transaction.type === 'CONVERT' && `CONVERTED ${transaction.amount.toFixed(2)} CRYPTO`}
-                            {transaction.type === 'UPGRADE' && `UPGRADED ${transaction.symbol}`}
-                          </span>
-                        </div>
-                        <div className={`font-bold ${
-                          transaction.type === 'BUY' || transaction.type === 'UPGRADE' ? 'text-red-400' :
-                          transaction.isProfit ? 'text-green-400' : 'text-green-400'
-                        }`}>
-                          {transaction.type === 'BUY' || transaction.type === 'UPGRADE' ? '-' : '+'}
-                          ${transaction.total ? transaction.total.toFixed(2) : (transaction.amount * transaction.price).toFixed(2)}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
@@ -1333,8 +1447,8 @@ const CryptoTradingGame = () => {
 
               {/* Available Recruits Section */}
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-              <div className="mt-2 mb-6 bg-gradient-to-r from-yellow-600/20 to-red-600/20 rounded-xl p-4 border border-yellow-400/30">
-                  <h4 className="font-bold mb-2 text-yellow-400 flex items-center gap-2">
+              <div className="mt-2 mb-6 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-xl p-4 border border-blue-400/30">
+                  <h4 className="font-bold mb-2 text-green-400 flex items-center gap-2">
                     💡 How Recruits Work
                   </h4>
                 <div className="text-sm text-gray-300 space-y-2">
@@ -1593,6 +1707,7 @@ const CryptoTradingGame = () => {
           </footer>
         </div>
       </div>
+    </div>
     </div>
   );
 };
