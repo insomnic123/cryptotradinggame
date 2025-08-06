@@ -11,6 +11,10 @@ const CryptoTradingGame = () => {
   const [lastMineTime, setLastMineTime] = useState(0) 
   const [currentTab, setCurrentTab] = useState('mining');
   const [transactionLog, setTransactionLog] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  const [showAchievementNotification, setShowAchievementNotification] = useState(null);
+
 
   // Recruits system
   const [hiredRecruits, setHiredRecruits] = useState([]);
@@ -36,6 +40,137 @@ const CryptoTradingGame = () => {
     {id: 5, name: 'ClosedAI.', symbol: 'CAI', price: 75, history: [75], volatility: 0.015, trend: -0.001 },
     {id: 6, name: 'DJLJ Physics Solutions', symbol: 'DCTI', price: 150, history: [150], volatility: 0.04, trend: 0.003 }
   ])
+
+  // basic ai generated achievements
+    const achievementDefinitions = [
+    {
+      id: 'first_mine',
+      name: 'First Steps',
+      description: 'Mine your first crypto',
+      icon: '⛏️',
+      category: 'mining',
+      rarity: 'common',
+      checkCondition: (gameState) => gameState.totalMined >= 1
+    },
+    {
+      id: 'crypto_millionaire',
+      name: 'Crypto Millionaire',
+      description: 'Accumulate 1,000 crypto',
+      icon: '💰',
+      category: 'mining',
+      rarity: 'rare',
+      checkCondition: (gameState) => gameState.crypto >= 1000
+    },
+    {
+      id: 'first_trade',
+      name: 'Market Debut',
+      description: 'Make your first stock trade',
+      icon: '📈',
+      category: 'trading',
+      rarity: 'common',
+      checkCondition: (gameState) => gameState.totalTrades >= 1
+    },
+    {
+      id: 'portfolio_king',
+      name: 'Portfolio King',
+      description: 'Reach $10,000 portfolio value',
+      icon: '👑',
+      category: 'trading',
+      rarity: 'epic',
+      checkCondition: (gameState) => gameState.portfolioValue >= 10000
+    },
+    {
+      id: 'debt_lord',
+      name: 'Debt Lord',
+      description: 'Go $5,000 into debt',
+      icon: '💸',
+      category: 'trading',
+      rarity: 'uncommon',
+      checkCondition: (gameState) => gameState.cad <= -5000
+    },
+    {
+      id: 'speed_demon',
+      name: 'Speed Demon',
+      description: 'Reduce mining cooldown to under 1 second',
+      icon: '⚡',
+      category: 'upgrades',
+      rarity: 'rare',
+      checkCondition: (gameState) => gameState.currentCooldown < 1000
+    },
+    {
+      id: 'full_team',
+      name: 'Dream Team',
+      description: 'Hire all 6 recruits',
+      icon: '👥',
+      category: 'recruits',
+      rarity: 'epic',
+      checkCondition: (gameState) => gameState.hiredRecruits >= 6
+    },
+    {
+      id: 'lucky_streak',
+      name: 'Lucky Streak',
+      description: 'Get 5 lucky mines in a row',
+      icon: '🍀',
+      category: 'mining',
+      rarity: 'legendary',
+      checkCondition: (gameState) => gameState.consecutiveLuckyMines >= 5
+    }
+  ]
+
+  const AchievementNotification = ({ achievement }) => {
+  if (!achievement) return null;
+  
+  const rarityColors = {
+    common: 'from-gray-600 to-gray-700 border-gray-400',
+    uncommon: 'from-green-600 to-green-700 border-green-400',
+    rare: 'from-blue-600 to-blue-700 border-blue-400',
+    epic: 'from-purple-600 to-purple-700 border-purple-400',
+    legendary: 'from-yellow-600 to-yellow-700 border-yellow-400'
+  };
+  
+  return (
+    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2">
+      <div className={`bg-gradient-to-r ${rarityColors[achievement.rarity]} backdrop-blur-lg rounded-xl p-4 border-2 shadow-2xl max-w-sm`}>
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">{achievement.icon}</div>
+          <div className="flex-1">
+            <div className="font-bold text-white text-lg">Achievement Unlocked!</div>
+            <div className="font-bold text-yellow-200">{achievement.name}</div>
+            <div className="text-sm text-gray-200">{achievement.description}</div>
+            <div className="text-xs text-gray-300 capitalize mt-1">{achievement.rarity} • {achievement.category}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  const checkAchievements = () => {
+  const currentGameState = {
+    crypto: crypto,
+    cad: cad,
+    portfolioValue: getPortfolioValue(),
+    totalMined: gameStats.totalMined,
+    totalTrades: gameStats.totalTrades,
+    consecutiveLuckyMines: gameStats.consecutiveLuckyMines,
+    currentCooldown: getCurrentCooldown(),
+    hiredRecruits: hiredRecruits.length
+  };
+
+  achievementDefinitions.forEach(achievement => {
+    const isUnlocked = unlockedAchievements.includes(achievement.id);
+    
+    if (!isUnlocked && achievement.checkCondition(currentGameState)) {
+      setUnlockedAchievements(prev => [...prev, achievement.id]);
+      setShowAchievementNotification(achievement);
+      
+      setTimeout(() => {
+        setShowAchievementNotification(null);
+      }, 5000);
+    }
+  });
+};
+
 
   const [portfolio, setPortfolio] = useState({}); 
   const [tradeAmount, setTradeAmount] = useState({});
@@ -133,6 +268,13 @@ const CryptoTradingGame = () => {
   const cryptoRate = 100;
   const baseCooldown = 5000; 
   const baseMineAmount = 1;
+
+  const [gameStats, setGameStats] = useState({
+  totalMined: 0,
+  totalTrades: 0,
+  consecutiveLuckyMines: 0,
+  maxPortfolioValue: 0
+  });
 
   const executeRecruitTrade = (recruit) => {
     const availableStocks = stocks;
@@ -349,22 +491,35 @@ const CryptoTradingGame = () => {
 
   const mineCrypto = () => {
     if (canMine()) {
-      let mineAmount = baseMineAmount + (shopUpgrades.miningBoost * 0.5);
-      
-      if (shopUpgrades.luckyMiner > 0) {
-        const luckChance = shopUpgrades.luckyMiner * 0.1;
-        if (Math.random() < luckChance) {
-          mineAmount *= 2;
-          addToTransactionLog('LUCKY_MINE', 'CRYPTO', mineAmount, 1, true);
-        } else {
-          addToTransactionLog('MINE', 'CRYPTO', mineAmount, 1);
-        }
+    let mineAmount = baseMineAmount + (shopUpgrades.miningBoost * 0.5);
+    let isLucky = false;
+    
+    if (shopUpgrades.luckyMiner > 0) {
+      const luckChance = shopUpgrades.luckyMiner * 0.1;
+      if (Math.random() < luckChance) {
+        mineAmount *= 2;
+        isLucky = true;
+        addToTransactionLog('LUCKY_MINE', 'CRYPTO', mineAmount, 1, true);
       } else {
         addToTransactionLog('MINE', 'CRYPTO', mineAmount, 1);
       }
-      
-      setCrypto(prev => prev + mineAmount);
-      setLastMineTime(Date.now());
+    } else {
+      addToTransactionLog('MINE', 'CRYPTO', mineAmount, 1);
+    }
+    
+    setCrypto(prev => prev + mineAmount);
+    setLastMineTime(Date.now());
+    
+    // Update stats
+    setGameStats(prev => ({
+      ...prev,
+      totalMined: prev.totalMined + mineAmount,
+      consecutiveLuckyMines: isLucky ? prev.consecutiveLuckyMines + 1 : 0
+    }));
+    
+    // Check achievements after state update
+    setTimeout(checkAchievements, 100);
+
     }
   }
 
@@ -469,18 +624,26 @@ const CryptoTradingGame = () => {
 
   const buyStock = (stockID, amount) => {
     if (!amount || amount <= 0) return;
-    
-    const stock = stocks.find(s => s.id === stockID);
-    const cost = stock.price * amount; 
+      
+      const stock = stocks.find(s => s.id === stockID);
+      const cost = stock.price * amount;
 
-    if (cad >= cost) {
-      setCad(prev => prev - cost);
-      setPortfolio(prev => ({
-        ...prev,
-        [stockID]: (prev[stockID] || 0) + amount
-      }));
-      addToTransactionLog('BUY', stock.symbol, amount, stock.price);
-      setTradeAmount({...tradeAmount, [stockID]: ''});
+      if (cad >= cost) {
+        setCad(prev => prev - cost);
+        setPortfolio(prev => ({
+          ...prev,
+          [stockID]: (prev[stockID] || 0) + amount
+        }));
+        addToTransactionLog('BUY', stock.symbol, amount, stock.price);
+        setTradeAmount({...tradeAmount, [stockID]: ''});
+        
+        // Update stats
+        setGameStats(prev => ({
+          ...prev,
+          totalTrades: prev.totalTrades + 1
+        }));
+        
+        setTimeout(checkAchievements, 100);
     }
   }
 
@@ -551,8 +714,132 @@ const CryptoTradingGame = () => {
     return () => clearInterval(interval);
   }, [lastMineTime, cooldownLevel, shopUpgrades.speedTrader]);
 
+    const AchievementsTab = () => {
+    const categories = [...new Set(achievementDefinitions.map(a => a.category))];
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    
+    const filteredAchievements = selectedCategory === 'all' 
+      ? achievementDefinitions 
+      : achievementDefinitions.filter(a => a.category === selectedCategory);
+    
+    const rarityColors = {
+      common: 'border-gray-400/50 bg-gray-600/20',
+      uncommon: 'border-green-400/50 bg-green-600/20',
+      rare: 'border-blue-400/50 bg-blue-600/20',
+      epic: 'border-purple-400/50 bg-purple-600/20',
+      legendary: 'border-yellow-400/50 bg-yellow-600/20'
+    };
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            🏆 Achievements ({unlockedAchievements.length}/{achievementDefinitions.length})
+          </h2>
+          
+          {/* Category Filter */}
+          <div className="flex gap-2 mb-6 flex-wrap">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-2 rounded-lg transition-all ${
+                selectedCategory === 'all' ? 'bg-purple-600/80 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              All ({achievementDefinitions.length})
+            </button>
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-lg transition-all capitalize ${
+                  selectedCategory === category ? 'bg-purple-600/80 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                }`}
+              >
+                {category} ({achievementDefinitions.filter(a => a.category === category).length})
+              </button>
+            ))}
+          </div>
+          
+          {/* Achievements Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredAchievements.map(achievement => {
+              const isUnlocked = unlockedAchievements.includes(achievement.id);
+              
+              return (
+                <div
+                  key={achievement.id}
+                  className={`rounded-xl p-4 border-2 transition-all ${
+                    isUnlocked 
+                      ? `${rarityColors[achievement.rarity]} opacity-100 shadow-lg` 
+                      : 'border-gray-600/30 bg-gray-800/20 opacity-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`text-2xl ${isUnlocked ? '' : 'grayscale'}`}>
+                      {isUnlocked ? achievement.icon : '🔒'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-lg mb-1">
+                        {isUnlocked ? achievement.name : '???'}
+                      </div>
+                      <div className="text-sm text-gray-300 mb-2">
+                        {isUnlocked ? achievement.description : 'Achievement locked'}
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs px-2 py-1 rounded-full capitalize ${
+                          isUnlocked ? 'bg-white/20' : 'bg-gray-600/30'
+                        }`}>
+                          {achievement.rarity}
+                        </span>
+                        <span className="text-xs text-gray-400 capitalize">
+                          {achievement.category}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Progress Summary */}
+          <div className="mt-6 bg-white/5 rounded-xl p-4">
+            <h3 className="font-bold mb-3">Progress Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+              {Object.entries(
+                achievementDefinitions.reduce((acc, achievement) => {
+                  acc[achievement.rarity] = (acc[achievement.rarity] || 0) + 1;
+                  return acc;
+                }, {})
+              ).map(([rarity, total]) => {
+                const unlocked = unlockedAchievements.filter(id => {
+                  const achievement = achievementDefinitions.find(a => a.id === id);
+                  return achievement?.rarity === rarity;
+                }).length;
+                
+                return (
+                  <div key={rarity} className="bg-white/10 rounded-lg p-3">
+                    <div className="font-bold capitalize text-lg">{rarity}</div>
+                    <div className="text-sm text-gray-300">{unlocked}/{total}</div>
+                    <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-purple-600 h-2 rounded-full transition-all"
+                        style={{width: `${(unlocked/total)*100}%`}}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <AchievementNotification achievement={showAchievementNotification} />
       <div className="fixed inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-purple-600/20"></div>
 
       <div className="relative z-10 p-4">
@@ -586,7 +873,8 @@ const CryptoTradingGame = () => {
             {[
               {id:'mining', label:'Mining & Shop', icon: Coins},
               {id:'trading', label: 'Trading', icon: TrendingUp},
-              {id:'recruits', label: 'Recruits', icon: Users}
+              {id:'recruits', label: 'Recruits', icon: Users},
+              {id:'achievements', label: 'Achievements', icon: Star}
             ].map(tab => {
               const Icon = tab.icon; 
               return (
@@ -948,6 +1236,9 @@ const CryptoTradingGame = () => {
             </div>
           )}
 
+          {/* Achievements Tab */}
+          {currentTab === 'achievements' && <AchievementsTab />}
+
           {/* Recruits Tab */}
           {currentTab === 'recruits' && (
             <div className="space-y-6">
@@ -1142,144 +1433,150 @@ const CryptoTradingGame = () => {
             </div>
           )}
 
-          {/* Selected Stock Modal */}
-          {selectedStock && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-auto border border-white/20">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-3xl font-bold">{selectedStock.symbol}</h2>
-                    <p className="text-gray-300">{selectedStock.name}</p>
+            {/* Selected Stock Modal */}
+          {selectedStock && (() => {
+            // Get the current stock data instead of using static selectedStock
+            const currentStock = stocks.find(s => s.id === selectedStock.id);
+            if (!currentStock) return null;
+            
+            return (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-auto border border-white/20">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-3xl font-bold">{currentStock.symbol}</h2>
+                      <p className="text-gray-300">{currentStock.name}</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedStock(null)}
+                      className="text-gray-400 hover:text-white text-2xl">×</button>
                   </div>
-                  <button
-                    onClick={() => setSelectedStock(null)}
-                    className="text-gray-400 hover:text-white text-2xl">×</button>
-                </div>
-                  
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <div className="bg-white/5 rounded-xl p-4 mb-4">
-                     <svg width="100%" height="300" className="w-full" viewBox="0 0 600 300">
-                        {selectedStock.history.length > 1 && (() => {
-                          const min = Math.min(...selectedStock.history);
-                          const max = Math.max(...selectedStock.history);
-                          const range = max - min || 1;
-                          const padding = 20;
-                          
-                          const points = selectedStock.history.map((price, index) => {
-                            const x = padding + (index / (selectedStock.history.length - 1)) * (600 - 2 * padding);
-                            const y = padding + (1 - (price - min) / range) * (300 - 2 * padding);
-                            return `${x},${y}`;
-                          }).join(' ');
-                          
-                          return (
-                            <polyline
-                              points={points}
-                              fill="none"
-                              stroke="#a855f7"
-                              strokeWidth="3"
-                              className="drop-shadow-lg"
-                            />
-                          );
-                        })()}
-                      </svg>
+                    
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                      <div className="bg-white/5 rounded-xl p-4 mb-4">
+                      <svg width="100%" height="300" className="w-full" viewBox="0 0 600 300">
+                          {currentStock.history.length > 1 && (() => {
+                            const min = Math.min(...currentStock.history);
+                            const max = Math.max(...currentStock.history);
+                            const range = max - min || 1;
+                            const padding = 20;
+                            
+                            const points = currentStock.history.map((price, index) => {
+                              const x = padding + (index / (currentStock.history.length - 1)) * (600 - 2 * padding);
+                              const y = padding + (1 - (price - min) / range) * (300 - 2 * padding);
+                              return `${x},${y}`;
+                            }).join(' ');
+                            
+                            return (
+                              <polyline
+                                points={points}
+                                fill="none"
+                                stroke="#a855f7"
+                                strokeWidth="3"
+                                className="drop-shadow-lg"
+                              />
+                            );
+                          })()}
+                        </svg>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-purple-400">${currentStock.price.toFixed(2)}</div>
+                          <div className="text-sm text-gray-300">Current Price</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-green-400">${Math.max(...currentStock.history).toFixed(2)}</div>
+                          <div className="text-sm text-gray-300">Day High</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-2xl font-bold text-red-400">${Math.min(...currentStock.history).toFixed(2)}</div>
+                          <div className="text-sm text-gray-300">Day Low</div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="bg-white/5 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-purple-400">${selectedStock.price.toFixed(2)}</div>
-                        <div className="text-sm text-gray-300">Current Price</div>
+                    <div className="space-y-4">
+                        <div className="bg-white/5 rounded-xl p-4">
+                        <h3 className="font-bold mb-3">Your Position</h3>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Shares Owned:</span>
+                            <span className="font-bold">{(portfolio[currentStock.id] || 0).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Value:</span>
+                            <span className="font-bold">${((portfolio[currentStock.id] || 0) * currentStock.price).toFixed(2)}</span>
+                          </div>
+                        </div>
                       </div>
-                       <div className="bg-white/5 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-green-400">${Math.max(...selectedStock.history).toFixed(2)}</div>
-                        <div className="text-sm text-gray-300">Day High</div>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3">
-                        <div className="text-2xl font-bold text-red-400">${Math.min(...selectedStock.history).toFixed(2)}</div>
-                        <div className="text-sm text-gray-300">Day Low</div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-4">
                       <div className="bg-white/5 rounded-xl p-4">
-                      <h3 className="font-bold mb-3">Your Position</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Shares Owned:</span>
-                          <span className="font-bold">{(portfolio[selectedStock.id] || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Value:</span>
-                          <span className="font-bold">${((portfolio[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-xl p-4">
-                      <h3 className="font-bold mb-3">Trade</h3>
-                      <div className="space-y-3">
-                        <input
-                          type="number"
-                          placeholder="Number of shares"
-                          value={tradeAmount[selectedStock.id] || ''}
-                          onChange={(e) => setTradeAmount({
-                            ...tradeAmount, 
-                            [selectedStock.id]: parseFloat(e.target.value) || ''
-                          })}
-                          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 backdrop-blur-sm"
-                        />
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setMaxBuy(selectedStock.id)}
-                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
-                          >
-                            Max Buy
-                          </button>
-                          <button
-                            onClick={() => setMaxSell(selectedStock.id)}
-                            className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
-                          >
-                            Max Sell
-                          </button>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => buyStock(selectedStock.id, tradeAmount[selectedStock.id])}
-                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
-                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
-                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
-                                ? 'bg-green-600/80 hover:bg-green-600 cursor-pointer'
-                                : 'bg-gray-600/50 cursor-not-allowed'
-                            }`}
-                          >
-                            Buy
-                          </button>
-                          <button
-                            onClick={() => sellStock(selectedStock.id, tradeAmount[selectedStock.id])}
-                            disabled={!tradeAmount[selectedStock.id] || tradeAmount[selectedStock.id] <= 0}
-                            className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
-                              tradeAmount[selectedStock.id] && tradeAmount[selectedStock.id] > 0
-                                ? 'bg-red-600/80 hover:bg-red-600 cursor-pointer'
-                                : 'bg-gray-600/50 cursor-not-allowed'
-                            }`}
-                          >
-                            Sell
-                          </button>
-                        </div>
-                        
-                        <div className="text-sm text-gray-300 text-center">
-                          Cost: ${((tradeAmount[selectedStock.id] || 0) * selectedStock.price).toFixed(2)}
+                        <h3 className="font-bold mb-3">Trade</h3>
+                        <div className="space-y-3">
+                          <input
+                            type="number"
+                            placeholder="Number of shares"
+                            value={tradeAmount[currentStock.id] || ''}
+                            onChange={(e) => setTradeAmount({
+                              ...tradeAmount, 
+                              [currentStock.id]: parseFloat(e.target.value) || ''
+                            })}
+                            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 backdrop-blur-sm"
+                          />
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setMaxBuy(currentStock.id)}
+                              className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
+                            >
+                              Max Buy
+                            </button>
+                            <button
+                              onClick={() => setMaxSell(currentStock.id)}
+                              className="flex-1 bg-purple-600/50 hover:bg-purple-600/70 py-2 rounded-lg transition-all backdrop-blur-sm border border-purple-400/30"
+                            >
+                              Max Sell
+                            </button>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => buyStock(currentStock.id, tradeAmount[currentStock.id])}
+                              disabled={!tradeAmount[currentStock.id] || tradeAmount[currentStock.id] <= 0}
+                              className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
+                                tradeAmount[currentStock.id] && tradeAmount[currentStock.id] > 0
+                                  ? 'bg-green-600/80 hover:bg-green-600 cursor-pointer'
+                                  : 'bg-gray-600/50 cursor-not-allowed'
+                              }`}
+                            >
+                              Buy
+                            </button>
+                            <button
+                              onClick={() => sellStock(currentStock.id, tradeAmount[currentStock.id])}
+                              disabled={!tradeAmount[currentStock.id] || tradeAmount[currentStock.id] <= 0}
+                              className={`flex-1 py-2 rounded-lg transition-all backdrop-blur-sm ${
+                                tradeAmount[currentStock.id] && tradeAmount[currentStock.id] > 0
+                                  ? 'bg-red-600/80 hover:bg-red-600 cursor-pointer'
+                                  : 'bg-gray-600/50 cursor-not-allowed'
+                              }`}
+                            >
+                              Sell
+                            </button>
+                          </div>
+                          
+                          <div className="text-sm text-gray-300 text-center">
+                            Cost: ${((tradeAmount[currentStock.id] || 0) * currentStock.price).toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Footer */}
           <footer className="mt-12 text-center">
