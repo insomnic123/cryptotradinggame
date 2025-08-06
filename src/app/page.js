@@ -110,7 +110,7 @@ const CryptoTradingGame = () => {
       salary: 125,
       cooldownTime: 90000,
       strategy: 'value',
-      personality: 'Former economics professor who believes in fundamentals.',
+      personality: 'Fueled by hatred to be the best.',
       maxDebt: 800,
       specialty: 'Value investing and sector rotation'
     },
